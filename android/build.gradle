@@ -51,6 +51,8 @@ repositories {
 dependencies {
   implementation 'com.facebook.react:react-native:+'
   implementation 'com.android.billingclient:billing:2.0.3'
+  implementation fileTree(dir: 'libs', include: ['*.jar'])
+  // implementation files('libs/in-app-purchasing-2.0.76.jar')
   def supportLibVersion = safeExtGet('supportLibVersion', safeExtGet('supportVersion', null))
   def androidXVersion = safeExtGet('androidXVersion', null)
   if (supportLibVersion && androidXVersion == null) {

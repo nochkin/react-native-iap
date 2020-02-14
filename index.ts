@@ -8,7 +8,7 @@ import {
   Platform,
 } from 'react-native';
 
-const { RNIapIos, RNIapModule } = NativeModules;
+const { RNIapIos, RNIapModule, RNIapAmazonModule } = NativeModules;
 
 interface Common {
   title: string;
@@ -128,8 +128,25 @@ const ANDROID_ITEM_TYPE_SUBSCRIPTION = 'subs';
 const ANDROID_ITEM_TYPE_IAP = 'inapp';
 export const PROMOTED_PRODUCT = 'iap-promoted-product';
 
+export enum CustomPlatform {
+  NOT_SET = 0,
+  AMAZON = 1,
+}
+
+let iapCustomPlatform = CustomPlatform.NOT_SET;
+
+export function setCustomPlatform(customPlatform: CustomPlatform): void {
+  iapCustomPlatform = customPlatform;
+}
+
 function checkNativeAndroidAvailable(): Promise<void> {
   if (!RNIapModule) {
+    return Promise.reject(new Error(IAPErrorCode.E_IAP_NOT_AVAILABLE));
+  }
+}
+
+function checkNativeAndroidAmazonAvailable(): Promise<void> {
+  if (!RNIapAmazonModule) {
     return Promise.reject(new Error(IAPErrorCode.E_IAP_NOT_AVAILABLE));
   }
 }
@@ -155,7 +172,14 @@ export const initConnection = (): Promise<boolean> =>
       if (!RNIapModule) {
         return Promise.resolve();
       }
-      return RNIapModule.initConnection();
+      switch(iapCustomPlatform) {
+        case CustomPlatform.AMAZON:
+          return RNIapAmazonModule.initConnection();
+          break;
+        default:
+          return RNIapModule.initConnection();
+          break;
+      }
     },
   })();
 
@@ -203,10 +227,19 @@ export const getProducts = (skus: string[]): Promise<Product[]> =>
       );
     },
     android: async () => {
-      if (!RNIapModule) {
-        return [];
+      switch (iapCustomPlatform) {
+        case CustomPlatform.AMAZON:
+          if (RNIapAmazonModule) {
+            return RNIapAmazonModule.getItemsByType(ANDROID_ITEM_TYPE_IAP, skus);
+          }
+          break;
+        default:
+          if (RNIapModule) {
+            return RNIapModule.getItemsByType(ANDROID_ITEM_TYPE_IAP, skus);
+          }
+          break;
       }
-      return RNIapModule.getItemsByType(ANDROID_ITEM_TYPE_IAP, skus);
+      return [];
     },
   })();
 
@@ -224,8 +257,14 @@ export const getSubscriptions = (skus: string[]): Promise<Subscription[]> =>
       );
     },
     android: async () => {
-      checkNativeAndroidAvailable();
-      return RNIapModule.getItemsByType(ANDROID_ITEM_TYPE_SUBSCRIPTION, skus);
+      switch(iapCustomPlatform) {
+        case CustomPlatform.AMAZON:
+          checkNativeAndroidAmazonAvailable();
+          return RNIapAmazonModule.getItemsByType(ANDROID_ITEM_TYPE_SUBSCRIPTION, skus);
+        default:
+          checkNativeAndroidAvailable();
+          return RNIapModule.getItemsByType(ANDROID_ITEM_TYPE_SUBSCRIPTION, skus);
+      }
     },
   })();
 
@@ -649,7 +688,14 @@ export const purchaseUpdatedListener = (
       'purchase-updated',
       e,
     );
-    RNIapModule.startListening();
+    switch(iapCustomPlatform) {
+      case CustomPlatform.AMAZON:
+        RNIapAmazonModule.startListening();
+        break;
+      default:
+        RNIapModule.startListening();
+        break;
+    }
     return emitterSubscription;
   }
 };
