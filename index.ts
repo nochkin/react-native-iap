@@ -348,15 +348,24 @@ export const requestPurchase = (
       );
     },
     android: async () => {
-      checkNativeAndroidAvailable();
-      return RNIapModule.buyItemByType(
-        ANDROID_ITEM_TYPE_IAP,
-        sku,
-        null,
-        0,
-        developerIdAndroid,
-        accountIdAndroid,
-      );
+      switch (iapCustomPlatform) {
+        case CustomPlatform.AMAZON:
+          checkNativeAndroidAmazonAvailable();
+          return RNIapAmazonModule.buyItemByType(
+            ANDROID_ITEM_TYPE_IAP,
+            sku,
+          );
+        default:
+          checkNativeAndroidAvailable();
+          return RNIapModule.buyItemByType(
+            ANDROID_ITEM_TYPE_IAP,
+            sku,
+            null,
+            0,
+            developerIdAndroid,
+            accountIdAndroid,
+          );
+      }
     },
   })();
 
@@ -396,16 +405,25 @@ export const requestSubscription = (
       );
     },
     android: async () => {
-      checkNativeAndroidAvailable();
       if (!prorationModeAndroid) prorationModeAndroid = -1;
-      return RNIapModule.buyItemByType(
-        ANDROID_ITEM_TYPE_SUBSCRIPTION,
-        sku,
-        oldSkuAndroid,
-        prorationModeAndroid,
-        developerIdAndroid,
-        userIdAndroid,
-      );
+      switch (iapCustomPlatform) {
+        case CustomPlatform.AMAZON:
+          checkNativeAndroidAmazonAvailable();
+          return RNIapAmazonModule.buyItemByType(
+            ANDROID_ITEM_TYPE_SUBSCRIPTION,
+            sku,
+          );
+        default:
+          checkNativeAndroidAvailable();
+          return RNIapModule.buyItemByType(
+            ANDROID_ITEM_TYPE_SUBSCRIPTION,
+            sku,
+            oldSkuAndroid,
+            prorationModeAndroid,
+            developerIdAndroid,
+            userIdAndroid,
+          );
+      }
     },
   })();
 

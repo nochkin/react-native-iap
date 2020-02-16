@@ -1,5 +1,6 @@
 package com.dooboolab.RNIap;
 
+import androidx.annotation.Nullable;
 import android.util.Log;
 
 import com.facebook.react.bridge.Arguments;
@@ -44,8 +45,11 @@ import com.amazon.device.iap.model.FulfillmentResult;
 public class RNIapAmazonModule extends ReactContextBaseJavaModule {
   final String TAG = "RNIapAmazonModule";
 
+  private static final String PROMISE_BUY_ITEM = "PROMISE_BUY_ITEM";
+  private static final String PROMISE_GET_PRODUCT_DATA = "PROMISE_GET_PRODUCT_DATA";
+  private static final String PROMISE_QUERY_PURCHASES = "PROMISE_QUERY_PURCHASES";
+
   private ReactContext reactContext;
-  private HashMap<String, ArrayList<Promise>> promises = new HashMap<>();
   private List<Product> skus;
 
   private PurchasingListener purchasingListener = new PurchasingListener() {
@@ -103,13 +107,13 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
             item.putString("originalPrice", product.getPrice());
             items.pushMap(item);
           }
-          resolvePromises(requestId, items);
+          DoobooUtils.getInstance().resolvePromisesForKey(PROMISE_GET_PRODUCT_DATA, items);
           break;
         case FAILED:
-          rejectPromises(requestId, "failed", null);
+          DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_GET_PRODUCT_DATA, null, "failed", null);
           break;
         case NOT_SUPPORTED:
-          rejectPromises(requestId, "not supported", null);
+          DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_GET_PRODUCT_DATA, null, "not supported", null);
           break;
       }
     }
@@ -121,8 +125,22 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
                    + response.getRequestStatus()
                    + ") userId ("
                    + response.getUserData().getUserId()
-                   + ")");
+                   + ")" + response.toString());
       final PurchaseUpdatesResponse.RequestStatus status = response.getRequestStatus();
+      switch(status) {
+        case SUCCESSFUL:
+          ArrayList<Receipt> unacknowledgedPurchases = new ArrayList<>();
+          List<Receipt> purchases = response.getReceipts();
+          for (Receipt receipt : purchases) {
+            unacknowledgedPurchases.add(receipt);
+          }
+          DoobooUtils.getInstance().resolvePromisesForKey(PROMISE_BUY_ITEM, unacknowledgedPurchases);
+          DoobooUtils.getInstance().resolvePromisesForKey(PROMISE_QUERY_PURCHASES, true);
+          break;
+        case FAILED:
+          DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_QUERY_PURCHASES, null, "failed", null);
+          break;
+      }
     }
 
     @Override
@@ -136,6 +154,16 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
                    + ") purchaseRequestStatus ("
                    + status
                    + ")");
+      switch(status) {
+        case SUCCESSFUL:
+          Receipt receipt = response.getReceipt();
+          final String receiptId = receipt.getReceiptId();
+          DoobooUtils.getInstance().resolvePromisesForKey(PROMISE_GET_PRODUCT_DATA, true);
+          break;
+        case FAILED:
+          DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_BUY_ITEM, null, "failed", null);
+          break;
+      }
     }
 
     @Override
@@ -173,46 +201,34 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
       productSkus.add(skuArr.getString(ii));
     }
     RequestId requestId = PurchasingService.getProductData(productSkus);
-    savePromise(requestId.toString(), promise);
+    DoobooUtils.getInstance().addPromiseForKey(PROMISE_GET_PRODUCT_DATA, promise);
+  }
+
+  @ReactMethod
+  public void buyItemByType(
+    final String type,
+    final String sku,
+    final Promise promise
+  ) {
+    RequestId requestId = PurchasingService.purchase(sku);
+    DoobooUtils.getInstance().addPromiseForKey(PROMISE_BUY_ITEM, promise);
+  }
+
+  private void sendUnconsumedPurchases(final Promise promise) {
+    PurchasingService.getPurchaseUpdates(true);
+    DoobooUtils.getInstance().addPromiseForKey(PROMISE_QUERY_PURCHASES, promise);
   }
 
   @ReactMethod
   public void startListening(final Promise promise) {
+    sendUnconsumedPurchases(promise);
   }
 
-  private void savePromise(String key, Promise promise) {
-    // Log.d(TAG, "saving promise: " + key);
-    ArrayList<Promise> list;
-    if (promises.containsKey(key)) {
-      list = promises.get(key);
-    }
-    else {
-      list = new ArrayList<Promise>();
-      promises.put(key, list);
-    }
-
-    list.add(promise);
-  }
-
-  private void resolvePromises(String key, Object value) {
-    // Log.d(TAG, "resolving promises: " + key + " " + value);
-    if (promises.containsKey(key)) {
-      ArrayList<Promise> list = promises.get(key);
-      for (Promise promise : list) {
-        promise.resolve(value);
-      }
-      promises.remove(key);
-    }
-  }
-
-  private void rejectPromises(String key, String message, Exception err) {
-    // Log.d(TAG, "reject promises: " + key + " : " + message);
-    if (promises.containsKey(key)) {
-      ArrayList<Promise> list = promises.get(key);
-      for (Promise promise : list) {
-        promise.reject(message, err);
-      }
-      promises.remove(key);
-    }
+  private void sendEvent(ReactContext reactContext,
+                         String eventName,
+                         @Nullable WritableMap params) {
+    reactContext
+        .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+        .emit(eventName, params);
   }
 }
