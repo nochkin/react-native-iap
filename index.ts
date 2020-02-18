@@ -139,6 +139,10 @@ export function setCustomPlatform(customPlatform: CustomPlatform): void {
   iapCustomPlatform = customPlatform;
 }
 
+export function getCustomPatform(): CustomPlatform {
+  return iapCustomPlatform;
+}
+
 function checkNativeAndroidAvailable(): Promise<void> {
   if (!RNIapModule) {
     return Promise.reject(new Error(IAPErrorCode.E_IAP_NOT_AVAILABLE));
@@ -479,18 +483,34 @@ export const finishTransaction = (
     android: async () => {
       if (purchase) {
         if (isConsumable) {
-          return RNIapModule.consumeProduct(
-            purchase.purchaseToken,
-            developerPayloadAndroid,
-          );
+          switch(iapCustomPlatform) {
+            case CustomPlatform.AMAZON:
+              return RNIapAmazonModule.consumeProduct(
+                purchase.purchaseToken,
+                developerPayloadAndroid,
+              );
+            default:
+              return RNIapModule.consumeProduct(
+                purchase.purchaseToken,
+                developerPayloadAndroid,
+              );
+          }
         } else if (
           !purchase.isAcknowledgedAndroid &&
           purchase.purchaseStateAndroid === PurchaseStateAndroid.PURCHASED
         ) {
-          return RNIapModule.acknowledgePurchase(
-            purchase.purchaseToken,
-            developerPayloadAndroid,
-          );
+          switch(iapCustomPlatform) {
+            case CustomPlatform.AMAZON:
+              return RNIapAmazonModule.acknowledgePurchase(
+                purchase.purchaseToken,
+                developerPayloadAndroid,
+              );
+            default:
+              return RNIapModule.acknowledgePurchase(
+                purchase.purchaseToken,
+                developerPayloadAndroid,
+              );
+          }
         } else {
           throw new Error('purchase is not suitable to be purchased');
         }

@@ -133,6 +133,22 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
           List<Receipt> purchases = response.getReceipts();
           for (Receipt receipt : purchases) {
             unacknowledgedPurchases.add(receipt);
+            Log.d(TAG, "receipt: " + receipt.toString());
+            WritableMap item = Arguments.createMap();
+            item.putString("productId", receipt.getSku());
+            //item.putString("transactionId", purchase.getOrderId());
+            item.putDouble("transactionDate", receipt.getPurchaseDate().getTime());
+            //item.putString("transactionReceipt", purchase.getOriginalJson());
+            item.putString("purchaseToken", receipt.getReceiptId());
+            //item.putString("dataAndroid", purchase.getOriginalJson());
+            //item.putString("signatureAndroid", purchase.getSignature());
+            //item.putBoolean("autoRenewingAndroid", purchase.isAutoRenewing());
+            //item.putBoolean("isAcknowledgedAndroid", purchase.isAcknowledged());
+            //item.putInt("purchaseStateAndroid", purchase.getPurchaseState());
+            item.putString("useridAmazon", response.getUserData().getUserId());
+            item.putString("userMarketplaceAmazon", response.getUserData().getMarketplace());
+
+            sendEvent(reactContext, "purchase-updated", item);
           }
           DoobooUtils.getInstance().resolvePromisesForKey(PROMISE_BUY_ITEM, unacknowledgedPurchases);
           DoobooUtils.getInstance().resolvePromisesForKey(PROMISE_QUERY_PURCHASES, true);
@@ -153,11 +169,18 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
                    + userId
                    + ") purchaseRequestStatus ("
                    + status
-                   + ")");
+                   + ") " + response.toString());
       switch(status) {
         case SUCCESSFUL:
           Receipt receipt = response.getReceipt();
-          final String receiptId = receipt.getReceiptId();
+          WritableMap item = Arguments.createMap();
+          item.putString("productId", receipt.getSku());
+          item.putDouble("transactionDate", receipt.getPurchaseDate().getTime());
+          item.putString("purchaseToken", receipt.getReceiptId());
+          item.putString("useridAmazon", response.getUserData().getUserId());
+          item.putString("userMarketplaceAmazon", response.getUserData().getMarketplace());
+          sendEvent(reactContext, "purchase-updated", item);
+
           DoobooUtils.getInstance().resolvePromisesForKey(PROMISE_GET_PRODUCT_DATA, true);
           break;
         case FAILED:
@@ -212,6 +235,20 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
   ) {
     RequestId requestId = PurchasingService.purchase(sku);
     DoobooUtils.getInstance().addPromiseForKey(PROMISE_BUY_ITEM, promise);
+  }
+
+  @ReactMethod
+  public void acknowledgePurchase(final String token, final String developerPayLoad, final Promise promise) {
+    Log.d(TAG, "acknowledgePurchase " + token);
+    PurchasingService.notifyFulfillment(token, FulfillmentResult.FULFILLED);
+    promise.resolve(true);
+  }
+
+  @ReactMethod
+  public void consumeProduct(final String token, final String developerPayLoad, final Promise promise) {
+    Log.d(TAG, "consumeProduct " + token);
+    PurchasingService.notifyFulfillment(token, FulfillmentResult.FULFILLED);
+    promise.resolve(true);
   }
 
   private void sendUnconsumedPurchases(final Promise promise) {
