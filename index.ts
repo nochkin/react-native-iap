@@ -128,25 +128,46 @@ const ANDROID_ITEM_TYPE_SUBSCRIPTION = 'subs';
 const ANDROID_ITEM_TYPE_IAP = 'inapp';
 export const PROMOTED_PRODUCT = 'iap-promoted-product';
 
-export enum CustomPlatform {
+export enum InstallSource {
   NOT_SET = 0,
-  AMAZON = 1,
+  GOOGLE_PLAY = 1,
+  AMAZON = 2,
 }
 
-let iapCustomPlatform = CustomPlatform.NOT_SET;
+let iapInstallSource = InstallSource.NOT_SET;
+let iapInstallSourceDefault = InstallSource.GOOGLE_PLAY;
 
-export function setCustomPlatform(customPlatform: CustomPlatform): void {
-  iapCustomPlatform = customPlatform;
+export function setInstallSourceDefault(installSource: InstallSource): void {
+  iapInstallSourceDefault = installSource;
 }
 
-export function getCustomPatform(): CustomPlatform {
-  return iapCustomPlatform;
+export function setInstallSource(installSource: InstallSource): void {
+  iapInstallSource = installSource;
+}
+
+export function getCustomPatform(): InstallSource {
+  return iapInstallSource;
+}
+
+function detectPlatform(): void {
+  const detectedInstallSource = RNIapModule.getInstallSource();
+  let newInstallSource = iapInstallSourceDefault;
+  switch (detectedInstallSource) {
+    case "GOOGLE_PLAY":
+      newInstallSource = InstallSource.GOOGLE_PLAY;
+      break;
+    case "AMAZON":
+      newInstallSource = InstallSource.AMAZON;
+      break;
+  }
+  setInstallSource(newInstallSource);
 }
 
 function getAndroidModule(): any {
   let myRNIapModule = null;
-  switch(iapCustomPlatform) {
-    case CustomPlatform.AMAZON:
+  (iapInstallSource == InstallSource.NOT_SET) && detectPlatform();
+  switch(iapInstallSource) {
+    case InstallSource.AMAZON:
       myRNIapModule = RNIapAmazonModule;
       break;
     default:
@@ -196,8 +217,8 @@ export const endConnectionAndroid = (): Promise<void> =>
   Platform.select({
     ios: async () => Promise.resolve(),
     android: async () => {
-      switch(iapCustomPlatform) {
-        case CustomPlatform.AMAZON:
+      switch(iapInstallSource) {
+        case InstallSource.AMAZON:
           return Promise.resolve();
         default:
           if (!RNIapModule) {

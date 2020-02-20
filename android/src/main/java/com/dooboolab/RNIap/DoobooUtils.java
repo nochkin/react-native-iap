@@ -3,6 +3,8 @@ package com.dooboolab.RNIap;
 import android.util.Log;
 
 import com.android.billingclient.api.BillingClient;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import com.facebook.react.bridge.ObjectAlreadyConsumedException;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReadableArray;
@@ -262,5 +264,21 @@ public class DoobooUtils {
       }
     }
     return array;
+  }
+
+  public final String getInstallSource(Context context) {
+    Context appContext = context.getApplicationContext();
+    PackageManager pkgManager = appContext.getPackageManager();
+    String installerPackageName = pkgManager.getInstallerPackageName(appContext.getPackageName());
+    if (installerPackageName == null) {
+      return "DEV";
+    } else if ("com.android.vending".equals(installerPackageName)) {
+      return "GOOGLE_PLAY";
+    } else if (installerPackageName.startsWith("com.amazon.")) {
+      return "AMAZON";
+    } else {
+      Log.d(TAG, "Unknown installer source: " + installerPackageName);
+    }
+    return null;
   }
 }

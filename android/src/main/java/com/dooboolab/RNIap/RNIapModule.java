@@ -603,4 +603,9 @@ public class RNIapModule extends ReactContextBaseJavaModule implements Purchases
         .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
         .emit(eventName, params);
   }
+
+  @ReactMethod
+  public final String getInstallSource() {
+    return DoobooUtils.getInstance().getInstallSource(reactContext);
+  }
 }
