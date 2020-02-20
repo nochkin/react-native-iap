@@ -58,7 +58,6 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
     public void onProductDataResponse(final ProductDataResponse response) {
       final ProductDataResponse.RequestStatus status = response.getRequestStatus();
       final String requestId = response.getRequestId().toString();
-      //Log.d(TAG, "onProductDataResponse: (" + status + ")");
       Log.d(TAG, "onProductDataResponse: " + requestId + " (" + status + ")");
 
       switch(status) {
@@ -110,7 +109,7 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
           DoobooUtils.getInstance().resolvePromisesForKey(PROMISE_GET_PRODUCT_DATA, items);
           break;
         case FAILED:
-          DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_GET_PRODUCT_DATA, null, "failed", null);
+          DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_GET_PRODUCT_DATA, null, null, null);
           break;
         case NOT_SUPPORTED:
           DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_GET_PRODUCT_DATA, null, "not supported", null);
@@ -120,12 +119,10 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
 
     @Override
     public void onPurchaseUpdatesResponse(final PurchaseUpdatesResponse response) {
-      Log.d(TAG, "onPurchaseUpdatesResponse: requestId (" + response.getRequestId()
-                   + ") purchaseUpdatesResponseStatus ("
-                   + response.getRequestStatus()
-                   + ") userId ("
-                   + response.getUserData().getUserId()
-                   + ")" + response.toString());
+      //Log.d(TAG, "onPurchaseUpdatesResponse: requestId (" + response.getRequestId()
+      //             + ") purchaseUpdatesResponseStatus (" + response.getRequestStatus()
+      //             + ") userId (" + response.getUserData().getUserId() + ")");
+      Log.d(TAG, "onPurchaseUpdatesResponse: " + response.toString());
       final PurchaseUpdatesResponse.RequestStatus status = response.getRequestStatus();
       switch(status) {
         case SUCCESSFUL:
@@ -154,7 +151,7 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
           DoobooUtils.getInstance().resolvePromisesForKey(PROMISE_QUERY_PURCHASES, true);
           break;
         case FAILED:
-          DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_QUERY_PURCHASES, null, "failed", null);
+          DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_QUERY_PURCHASES, null, null, null);
           break;
       }
     }
@@ -164,12 +161,9 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
       final String requestId = response.getRequestId().toString();
       final String userId = response.getUserData().getUserId();
       final PurchaseResponse.RequestStatus status = response.getRequestStatus();
-      Log.d(TAG, "onPurchaseResponse: requestId (" + requestId
-                   + ") userId ("
-                   + userId
-                   + ") purchaseRequestStatus ("
-                   + status
-                   + ") " + response.toString());
+      //Log.d(TAG, "onPurchaseResponse: requestId (" + requestId + ") userId ("
+      //             + userId + ") purchaseRequestStatus (" + status + ")");
+      Log.d(TAG, "onPurchaseResponse: " + response.toString());
       switch(status) {
         case SUCCESSFUL:
           Receipt receipt = response.getReceipt();
@@ -184,17 +178,16 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
           DoobooUtils.getInstance().resolvePromisesForKey(PROMISE_GET_PRODUCT_DATA, true);
           break;
         case FAILED:
-          DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_BUY_ITEM, null, "failed", null);
+          DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_BUY_ITEM, null, null, null);
           break;
       }
     }
 
     @Override
     public void onUserDataResponse(final UserDataResponse response) {
-      Log.d(TAG, "onGetUserDataResponse: requestId (" + response.getRequestId()
-                   + ") userIdRequestStatus: "
-                   + response.getRequestStatus()
-                   + ")");
+      //Log.d(TAG, "onGetUserDataResponse: requestId (" + response.getRequestId()
+      //             + ") userIdRequestStatus: " + response.getRequestStatus() + ")");
+      Log.d(TAG, "onGetUserDataResponse: " + response.toString());
       final UserDataResponse.RequestStatus status = response.getRequestStatus();
     }
   };
@@ -231,6 +224,10 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
   public void buyItemByType(
     final String type,
     final String sku,
+    final String oldSku,
+    final Integer prorationMode,
+    final String developerId,
+    final String accountId,
     final Promise promise
   ) {
     RequestId requestId = PurchasingService.purchase(sku);

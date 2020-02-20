@@ -143,14 +143,21 @@ export function getCustomPatform(): CustomPlatform {
   return iapCustomPlatform;
 }
 
-function checkNativeAndroidAvailable(): Promise<void> {
-  if (!RNIapModule) {
-    return Promise.reject(new Error(IAPErrorCode.E_IAP_NOT_AVAILABLE));
+function getAndroidModule(): any {
+  let myRNIapModule = null;
+  switch(iapCustomPlatform) {
+    case CustomPlatform.AMAZON:
+      myRNIapModule = RNIapAmazonModule;
+      break;
+    default:
+      myRNIapModule = RNIapModule;
+      break;
   }
+  return myRNIapModule;
 }
 
-function checkNativeAndroidAmazonAvailable(): Promise<void> {
-  if (!RNIapAmazonModule) {
+function checkNativeAndroidAvailable(myRNIapModule: any): Promise<void> {
+  if (!myRNIapModule) {
     return Promise.reject(new Error(IAPErrorCode.E_IAP_NOT_AVAILABLE));
   }
 }
@@ -173,17 +180,11 @@ export const initConnection = (): Promise<boolean> =>
       return RNIapIos.canMakePayments();
     },
     android: async () => {
-      if (!RNIapModule) {
+      const myRNIapModule = getAndroidModule();
+      if (!RNIapModule || !RNIapAmazonModule) {
         return Promise.resolve();
       }
-      switch(iapCustomPlatform) {
-        case CustomPlatform.AMAZON:
-          return RNIapAmazonModule.initConnection();
-          break;
-        default:
-          return RNIapModule.initConnection();
-          break;
-      }
+      return myRNIapModule.initConnection();
     },
   })();
 
@@ -195,10 +196,15 @@ export const endConnectionAndroid = (): Promise<void> =>
   Platform.select({
     ios: async () => Promise.resolve(),
     android: async () => {
-      if (!RNIapModule) {
-        return Promise.resolve();
+      switch(iapCustomPlatform) {
+        case CustomPlatform.AMAZON:
+          return Promise.resolve();
+        default:
+          if (!RNIapModule) {
+            return Promise.resolve();
+          }
+          return RNIapModule.endConnection();
       }
-      return RNIapModule.endConnection();
     },
   })();
 
@@ -210,8 +216,9 @@ export const consumeAllItemsAndroid = (): Promise<string[]> =>
   Platform.select({
     ios: async () => Promise.resolve(),
     android: async () => {
-      checkNativeAndroidAvailable();
-      return RNIapModule.refreshItems();
+      const myRNIapModule = getAndroidModule();
+      checkNativeAndroidAvailable(myRNIapModule);
+      return myRNIapModule.refreshItems();
     },
   })();
 
@@ -231,19 +238,11 @@ export const getProducts = (skus: string[]): Promise<Product[]> =>
       );
     },
     android: async () => {
-      switch (iapCustomPlatform) {
-        case CustomPlatform.AMAZON:
-          if (RNIapAmazonModule) {
-            return RNIapAmazonModule.getItemsByType(ANDROID_ITEM_TYPE_IAP, skus);
-          }
-          break;
-        default:
-          if (RNIapModule) {
-            return RNIapModule.getItemsByType(ANDROID_ITEM_TYPE_IAP, skus);
-          }
-          break;
+      const myRNIapModule = getAndroidModule();
+      if (!myRNIapModule) {
+        return [];
       }
-      return [];
+      return myRNIapModule.getItemsByType(ANDROID_ITEM_TYPE_IAP, skus);
     },
   })();
 
@@ -261,14 +260,9 @@ export const getSubscriptions = (skus: string[]): Promise<Subscription[]> =>
       );
     },
     android: async () => {
-      switch(iapCustomPlatform) {
-        case CustomPlatform.AMAZON:
-          checkNativeAndroidAmazonAvailable();
-          return RNIapAmazonModule.getItemsByType(ANDROID_ITEM_TYPE_SUBSCRIPTION, skus);
-        default:
-          checkNativeAndroidAvailable();
-          return RNIapModule.getItemsByType(ANDROID_ITEM_TYPE_SUBSCRIPTION, skus);
-      }
+      const myRNIapModule = getAndroidModule();
+      checkNativeAndroidAvailable(myRNIapModule);
+      return myRNIapModule.getItemsByType(ANDROID_ITEM_TYPE_SUBSCRIPTION, skus);
     },
   })();
 
@@ -285,11 +279,12 @@ InAppPurchase | SubscriptionPurchase
       return RNIapIos.getAvailableItems();
     },
     android: async () => {
-      checkNativeAndroidAvailable();
-      const products = await RNIapModule.getPurchaseHistoryByType(
+      const myRNIapModule = getAndroidModule();
+      checkNativeAndroidAvailable(myRNIapModule);
+      const products = await myRNIapModule.getPurchaseHistoryByType(
         ANDROID_ITEM_TYPE_IAP,
       );
-      const subscriptions = await RNIapModule.getPurchaseHistoryByType(
+      const subscriptions = await myRNIapModule.getPurchaseHistoryByType(
         ANDROID_ITEM_TYPE_SUBSCRIPTION,
       );
       return products.concat(subscriptions);
@@ -309,11 +304,12 @@ InAppPurchase | SubscriptionPurchase
       return RNIapIos.getAvailableItems();
     },
     android: async () => {
-      checkNativeAndroidAvailable();
-      const products = await RNIapModule.getAvailableItemsByType(
+      const myRNIapModule = getAndroidModule();
+      checkNativeAndroidAvailable(myRNIapModule);
+      const products = await myRNIapModule.getAvailableItemsByType(
         ANDROID_ITEM_TYPE_IAP,
       );
-      const subscriptions = await RNIapModule.getAvailableItemsByType(
+      const subscriptions = await myRNIapModule.getAvailableItemsByType(
         ANDROID_ITEM_TYPE_SUBSCRIPTION,
       );
       return products.concat(subscriptions);
@@ -352,24 +348,16 @@ export const requestPurchase = (
       );
     },
     android: async () => {
-      switch (iapCustomPlatform) {
-        case CustomPlatform.AMAZON:
-          checkNativeAndroidAmazonAvailable();
-          return RNIapAmazonModule.buyItemByType(
-            ANDROID_ITEM_TYPE_IAP,
-            sku,
-          );
-        default:
-          checkNativeAndroidAvailable();
-          return RNIapModule.buyItemByType(
-            ANDROID_ITEM_TYPE_IAP,
-            sku,
-            null,
-            0,
-            developerIdAndroid,
-            accountIdAndroid,
-          );
-      }
+      const myRNIapModule = getAndroidModule();
+      checkNativeAndroidAvailable(myRNIapModule);
+      return myRNIapModule.buyItemByType(
+        ANDROID_ITEM_TYPE_IAP,
+        sku,
+        null,
+        0,
+        developerIdAndroid,
+        accountIdAndroid,
+      );
     },
   })();
 
@@ -410,24 +398,16 @@ export const requestSubscription = (
     },
     android: async () => {
       if (!prorationModeAndroid) prorationModeAndroid = -1;
-      switch (iapCustomPlatform) {
-        case CustomPlatform.AMAZON:
-          checkNativeAndroidAmazonAvailable();
-          return RNIapAmazonModule.buyItemByType(
-            ANDROID_ITEM_TYPE_SUBSCRIPTION,
-            sku,
-          );
-        default:
-          checkNativeAndroidAvailable();
-          return RNIapModule.buyItemByType(
-            ANDROID_ITEM_TYPE_SUBSCRIPTION,
-            sku,
-            oldSkuAndroid,
-            prorationModeAndroid,
-            developerIdAndroid,
-            userIdAndroid,
-          );
-      }
+      const myRNIapModule = getAndroidModule();
+      checkNativeAndroidAvailable(myRNIapModule);
+      return myRNIapModule.buyItemByType(
+        ANDROID_ITEM_TYPE_SUBSCRIPTION,
+        sku,
+        oldSkuAndroid,
+        prorationModeAndroid,
+        developerIdAndroid,
+        userIdAndroid,
+      );
     },
   })();
 
@@ -481,36 +461,21 @@ export const finishTransaction = (
       return RNIapIos.finishTransaction(purchase.transactionId);
     },
     android: async () => {
+      const myRNIapModule = getAndroidModule();
       if (purchase) {
         if (isConsumable) {
-          switch(iapCustomPlatform) {
-            case CustomPlatform.AMAZON:
-              return RNIapAmazonModule.consumeProduct(
-                purchase.purchaseToken,
-                developerPayloadAndroid,
-              );
-            default:
-              return RNIapModule.consumeProduct(
-                purchase.purchaseToken,
-                developerPayloadAndroid,
-              );
-          }
+          return myRNIapModule.consumeProduct(
+            purchase.purchaseToken,
+            developerPayloadAndroid,
+          );
         } else if (
           !purchase.isAcknowledgedAndroid &&
           purchase.purchaseStateAndroid === PurchaseStateAndroid.PURCHASED
         ) {
-          switch(iapCustomPlatform) {
-            case CustomPlatform.AMAZON:
-              return RNIapAmazonModule.acknowledgePurchase(
-                purchase.purchaseToken,
-                developerPayloadAndroid,
-              );
-            default:
-              return RNIapModule.acknowledgePurchase(
-                purchase.purchaseToken,
-                developerPayloadAndroid,
-              );
-          }
+          return myRNIapModule.acknowledgePurchase(
+            purchase.purchaseToken,
+            developerPayloadAndroid,
+          );
         } else {
           throw new Error('purchase is not suitable to be purchased');
         }
@@ -564,8 +529,9 @@ export const acknowledgePurchaseAndroid = (
   Platform.select({
     ios: async () => Promise.resolve(),
     android: async () => {
-      checkNativeAndroidAvailable();
-      return RNIapModule.acknowledgePurchase(token, developerPayload);
+      const myRNIapModule = getAndroidModule();
+      checkNativeAndroidAvailable(myRNIapModule);
+      return myRNIapModule.acknowledgePurchase(token, developerPayload);
     },
   })();
 
@@ -581,8 +547,9 @@ export const consumePurchaseAndroid = (
   Platform.select({
     ios: async () => Promise.resolve(),
     android: async () => {
-      checkNativeAndroidAvailable();
-      return RNIapModule.consumeProduct(token, developerPayload);
+      const myRNIapModule = getAndroidModule();
+      checkNativeAndroidAvailable(myRNIapModule);
+      return myRNIapModule.consumeProduct(token, developerPayload);
     },
   })();
 
@@ -726,14 +693,8 @@ export const purchaseUpdatedListener = (
       'purchase-updated',
       e,
     );
-    switch(iapCustomPlatform) {
-      case CustomPlatform.AMAZON:
-        RNIapAmazonModule.startListening();
-        break;
-      default:
-        RNIapModule.startListening();
-        break;
-    }
+    const myRNIapModule = getAndroidModule();
+    myRNIapModule.startListening();
     return emitterSubscription;
   }
 };
