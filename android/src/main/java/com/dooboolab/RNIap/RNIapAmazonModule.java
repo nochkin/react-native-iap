@@ -48,6 +48,14 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
   private static final String PROMISE_BUY_ITEM = "PROMISE_BUY_ITEM";
   private static final String PROMISE_GET_PRODUCT_DATA = "PROMISE_GET_PRODUCT_DATA";
   private static final String PROMISE_QUERY_PURCHASES = "PROMISE_QUERY_PURCHASES";
+  private static final String PROMISE_GET_USER_DATA = "PROMISE_GET_USER_DATA";
+
+  private static final String E_PRODUCT_DATA_RESPONSE_FAILED = "E_PRODUCT_DATA_RESPONSE_FAILED";
+  private static final String E_PRODUCT_DATA_RESPONSE_NOT_SUPPORTED = "E_PRODUCT_DATA_RESPONSE_NOT_SUPPORTED";
+  private static final String E_PURCHASE_UPDATES_RESPONSE_FAILED = "E_PURCHASE_UPDATES_RESPONSE_FAILED";
+  private static final String E_PURCHASE_RESPONSE_FAILED = "E_PURCHASE_RESPONSE_FAILED";
+  private static final String E_USER_DATA_RESPONSE_FAILED = "E_USER_DATA_RESPONSE_FAILED";
+  private static final String E_USER_DATA_RESPONSE_NOT_SUPPORTED = "E_USER_DATA_RESPONSE_NOT_SUPPORTED";
 
   private ReactContext reactContext;
   private List<Product> skus;
@@ -109,10 +117,10 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
           DoobooUtils.getInstance().resolvePromisesForKey(PROMISE_GET_PRODUCT_DATA, items);
           break;
         case FAILED:
-          DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_GET_PRODUCT_DATA, null, null, null);
+          DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_GET_PRODUCT_DATA, E_PRODUCT_DATA_RESPONSE_FAILED, null, null);
           break;
         case NOT_SUPPORTED:
-          DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_GET_PRODUCT_DATA, null, "not supported", null);
+          DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_GET_PRODUCT_DATA, E_PRODUCT_DATA_RESPONSE_NOT_SUPPORTED, null, null);
           break;
       }
     }
@@ -151,7 +159,7 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
           DoobooUtils.getInstance().resolvePromisesForKey(PROMISE_QUERY_PURCHASES, true);
           break;
         case FAILED:
-          DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_QUERY_PURCHASES, null, null, null);
+          DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_QUERY_PURCHASES, E_PURCHASE_UPDATES_RESPONSE_FAILED, null, null);
           break;
       }
     }
@@ -178,7 +186,7 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
           DoobooUtils.getInstance().resolvePromisesForKey(PROMISE_GET_PRODUCT_DATA, true);
           break;
         case FAILED:
-          DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_BUY_ITEM, null, null, null);
+          DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_BUY_ITEM, E_PURCHASE_RESPONSE_FAILED, null, null);
           break;
       }
     }
@@ -189,6 +197,24 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
       //             + ") userIdRequestStatus: " + response.getRequestStatus() + ")");
       Log.d(TAG, "onGetUserDataResponse: " + response.toString());
       final UserDataResponse.RequestStatus status = response.getRequestStatus();
+      switch(status) {
+        case SUCCESSFUL:
+          UserData userData = response.getUserData();
+          WritableMap item = Arguments.createMap();
+          item.putString("useridAmazon", userData.getUserId());
+          item.putString("userMarketplaceAmazon", userData.getMarketplace());
+          item.putString("userJsonAmazon", userData.toJSON().toString());
+          sendEvent(reactContext, "userdata", item);
+
+          DoobooUtils.getInstance().resolvePromisesForKey(PROMISE_GET_USER_DATA, true);
+          break;
+        case NOT_SUPPORTED:
+          DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_GET_USER_DATA, E_USER_DATA_RESPONSE_NOT_SUPPORTED, null, null);
+          break;
+        case FAILED:
+          DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_GET_USER_DATA, E_USER_DATA_RESPONSE_FAILED, null, null);
+          break;
+      }
     }
   };
 
