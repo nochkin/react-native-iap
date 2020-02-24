@@ -31,6 +31,7 @@ import java.text.ParseException;
 import com.amazon.device.iap.PurchasingService;
 import com.amazon.device.iap.PurchasingListener;
 
+import com.amazon.device.iap.model.CoinsReward;
 import com.amazon.device.iap.model.Product;
 import com.amazon.device.iap.model.ProductType;
 import com.amazon.device.iap.model.ProductDataResponse;
@@ -52,8 +53,15 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
 
   private static final String E_PRODUCT_DATA_RESPONSE_FAILED = "E_PRODUCT_DATA_RESPONSE_FAILED";
   private static final String E_PRODUCT_DATA_RESPONSE_NOT_SUPPORTED = "E_PRODUCT_DATA_RESPONSE_NOT_SUPPORTED";
+
   private static final String E_PURCHASE_UPDATES_RESPONSE_FAILED = "E_PURCHASE_UPDATES_RESPONSE_FAILED";
+  private static final String E_PURCHASE_UPDATES_RESPONSE_NOT_SUPPORTED = "E_PURCHASE_UPDATES_RESPONSE_NOT_SUPPORTED";
+
   private static final String E_PURCHASE_RESPONSE_FAILED = "E_PURCHASE_RESPONSE_FAILED";
+  private static final String E_PURCHASE_RESPONSE_ALREADY_PURCHASED = "E_PURCHASE_RESPONSE_ALREADY_PURCHASED";
+  private static final String E_PURCHASE_RESPONSE_NOT_SUPPORTED = "E_PURCHASE_RESPONSE_NOT_SUPPORTED";
+  private static final String E_PURCHASE_RESPONSE_INVALID_SKU = "E_PURCHASE_RESPONSE_INVALID_SKU";
+
   private static final String E_USER_DATA_RESPONSE_FAILED = "E_USER_DATA_RESPONSE_FAILED";
   private static final String E_USER_DATA_RESPONSE_NOT_SUPPORTED = "E_USER_DATA_RESPONSE_NOT_SUPPORTED";
 
@@ -95,7 +103,7 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
             }
 
             WritableMap item = Arguments.createMap();
-            final String sku = product.getSku();
+            CoinsReward coinsReward = product.getCoinsReward();
             item.putString("productId", product.getSku());
             item.putString("price", priceNumber.toString());
             item.putString("currency", product.getPrice().substring(0, 1));
@@ -111,6 +119,9 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
             item.putString("iconUrl", product.getSmallIconUrl());
             item.putString("originalJson", product.toString());
             item.putString("originalPrice", product.getPrice());
+            if (coinsReward != null) {
+              item.putInt("coinsRewardAmountAmazon", coinsReward.getAmount());
+            }
             items.pushMap(item);
           }
           DoobooUtils.getInstance().resolvePromisesForKey(PROMISE_GET_PRODUCT_DATA, items);
@@ -133,6 +144,7 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
       final PurchaseUpdatesResponse.RequestStatus status = response.getRequestStatus();
       switch(status) {
         case SUCCESSFUL:
+          UserData userData = response.getUserData();
           ArrayList<Receipt> unacknowledgedPurchases = new ArrayList<>();
           List<Receipt> purchases = response.getReceipts();
           for (Receipt receipt : purchases) {
@@ -149,8 +161,10 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
             //item.putBoolean("autoRenewingAndroid", purchase.isAutoRenewing());
             //item.putBoolean("isAcknowledgedAndroid", purchase.isAcknowledged());
             //item.putInt("purchaseStateAndroid", purchase.getPurchaseState());
-            item.putString("useridAmazon", response.getUserData().getUserId());
-            item.putString("userMarketplaceAmazon", response.getUserData().getMarketplace());
+            item.putString("originalJson", receipt.toJSON().toString());
+            item.putString("userIdAmazon", userData.getUserId());
+            item.putString("userMarketplaceAmazon", userData.getMarketplace());
+            item.putString("userJsonAmazon", userData.toJSON().toString());
 
             sendEvent(reactContext, "purchase-updated", item);
           }
@@ -159,6 +173,9 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
           break;
         case FAILED:
           DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_QUERY_PURCHASES, E_PURCHASE_UPDATES_RESPONSE_FAILED, null, null);
+          break;
+        case NOT_SUPPORTED:
+          DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_QUERY_PURCHASES, E_PURCHASE_UPDATES_RESPONSE_NOT_SUPPORTED, null, null);
           break;
       }
     }
@@ -174,18 +191,30 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
       switch(status) {
         case SUCCESSFUL:
           Receipt receipt = response.getReceipt();
+          UserData userData = response.getUserData();
           WritableMap item = Arguments.createMap();
           item.putString("productId", receipt.getSku());
           item.putDouble("transactionDate", receipt.getPurchaseDate().getTime());
           item.putString("purchaseToken", receipt.getReceiptId());
-          item.putString("useridAmazon", response.getUserData().getUserId());
-          item.putString("userMarketplaceAmazon", response.getUserData().getMarketplace());
+          item.putString("originalJson", receipt.toJSON().toString());
+          item.putString("userIdAmazon", userData.getUserId());
+          item.putString("userMarketplaceAmazon", userData.getMarketplace());
+          item.putString("userJsonAmazon", userData.toJSON().toString());
           sendEvent(reactContext, "purchase-updated", item);
 
           DoobooUtils.getInstance().resolvePromisesForKey(PROMISE_GET_PRODUCT_DATA, true);
           break;
+        case ALREADY_PURCHASED:
+          DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_BUY_ITEM, E_PURCHASE_RESPONSE_ALREADY_PURCHASED, null, null);
+          break;
         case FAILED:
           DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_BUY_ITEM, E_PURCHASE_RESPONSE_FAILED, null, null);
+          break;
+        case INVALID_SKU:
+          DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_BUY_ITEM, E_PURCHASE_RESPONSE_INVALID_SKU, null, null);
+          break;
+        case NOT_SUPPORTED:
+          DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_BUY_ITEM, E_PURCHASE_RESPONSE_NOT_SUPPORTED, null, null);
           break;
       }
     }
@@ -200,7 +229,7 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
         case SUCCESSFUL:
           UserData userData = response.getUserData();
           WritableMap item = Arguments.createMap();
-          item.putString("useridAmazon", userData.getUserId());
+          item.putString("userIdAmazon", userData.getUserId());
           item.putString("userMarketplaceAmazon", userData.getMarketplace());
           item.putString("userJsonAmazon", userData.toJSON().toString());
           sendEvent(reactContext, "userdata", item);
@@ -232,7 +261,6 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void initConnection(final Promise promise) {
-    DoobooUtils.getInstance().getInstallSource(reactContext);
     promise.resolve(true);
   }
 

@@ -149,7 +149,7 @@ export function getInstallSource(): InstallSource {
   return iapInstallSource;
 }
 
-function detectPlatform(): void {
+function detectInstallSource(): void {
   const detectedInstallSource = RNIapModule.getInstallSource();
   let newInstallSource = iapInstallSourceFallback;
   switch (detectedInstallSource) {
@@ -165,7 +165,7 @@ function detectPlatform(): void {
 
 function getAndroidModule(): any {
   let myRNIapModule = null;
-  (iapInstallSource === InstallSource.NOT_SET) && detectPlatform();
+  (iapInstallSource === InstallSource.NOT_SET) && detectInstallSource();
   console.debug("RNIap: using ", iapInstallSource);
   switch(iapInstallSource) {
     case InstallSource.AMAZON:
