@@ -146,7 +146,7 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
         case SUCCESSFUL:
           UserData userData = response.getUserData();
           ArrayList<Receipt> unacknowledgedPurchases = new ArrayList<>();
-          List<Receipt> purchases = response.getReceipts();
+          final List<Receipt> purchases = response.getReceipts();
           for (Receipt receipt : purchases) {
             unacknowledgedPurchases.add(receipt);
             Log.d(TAG, "receipt: " + receipt.toString());
@@ -169,7 +169,11 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
             sendEvent(reactContext, "purchase-updated", item);
           }
           DoobooUtils.getInstance().resolvePromisesForKey(PROMISE_BUY_ITEM, unacknowledgedPurchases);
-          DoobooUtils.getInstance().resolvePromisesForKey(PROMISE_QUERY_PURCHASES, true);
+          if (response.hasMore()) {
+            PurchasingService.getPurchaseUpdates(false);
+          } else {
+            DoobooUtils.getInstance().resolvePromisesForKey(PROMISE_QUERY_PURCHASES, true);
+          }
           break;
         case FAILED:
           DoobooUtils.getInstance().rejectPromisesForKey(PROMISE_QUERY_PURCHASES, E_PURCHASE_UPDATES_RESPONSE_FAILED, null, null);
@@ -190,8 +194,8 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
       Log.d(TAG, "onPurchaseResponse: " + response.toString());
       switch(status) {
         case SUCCESSFUL:
-          Receipt receipt = response.getReceipt();
-          UserData userData = response.getUserData();
+          final Receipt receipt = response.getReceipt();
+          final UserData userData = response.getUserData();
           WritableMap item = Arguments.createMap();
           item.putString("productId", receipt.getSku());
           item.putDouble("transactionDate", receipt.getPurchaseDate().getTime());
@@ -227,7 +231,7 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
       final UserDataResponse.RequestStatus status = response.getRequestStatus();
       switch(status) {
         case SUCCESSFUL:
-          UserData userData = response.getUserData();
+          final UserData userData = response.getUserData();
           WritableMap item = Arguments.createMap();
           item.putString("userIdAmazon", userData.getUserId());
           item.putString("userMarketplaceAmazon", userData.getMarketplace());
@@ -246,11 +250,26 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
     }
   };
 
+  private LifecycleEventListener lifecycleEventListener = new LifecycleEventListener() {
+    @Override
+    public void onHostResume() {
+      PurchasingService.getPurchaseUpdates(false);
+    }
+
+    @Override
+    public void onHostPause() {
+    }
+
+    @Override
+    public void onHostDestroy() {
+    }
+  };
+
   public RNIapAmazonModule(ReactApplicationContext reactContext) {
     super(reactContext);
     this.reactContext = reactContext;
     this.skus = new ArrayList<Product>();
-    // reactContext.addLifecycleEventListener(lifecycleEventListener);
+    reactContext.addLifecycleEventListener(lifecycleEventListener);
     PurchasingService.registerListener(reactContext, purchasingListener);
   }
 
