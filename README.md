@@ -1,4 +1,4 @@
-react-native-iap
+![image](https://user-images.githubusercontent.com/27461460/75094417-20321b00-55ce-11ea-8de7-a1df42a4b7df.png)
 ================
 [![Version](http://img.shields.io/npm/v/react-native-iap.svg?style=flat-square)](https://npmjs.org/package/react-native-iap)
 [![Download](http://img.shields.io/npm/dm/react-native-iap.svg?style=flat-square)](https://npmjs.org/package/react-native-iap)
@@ -11,13 +11,14 @@ react-native-iap
 [![PR Opened](https://img.shields.io/github/issues-pr/dooboolab/react-native-iap.svg)](https://github.com/dooboolab/react-native-iap/pulls)
 [![PR Closed](https://img.shields.io/github/issues-pr-closed/dooboolab/react-native-iap.svg)](https://github.com/dooboolab/react-native-iap/pulls?q=is%3Apr+is%3Aclosed) [![Greenkeeper badge](https://badges.greenkeeper.io/dooboolab/react-native-iap.svg)](https://greenkeeper.io/)
 
-> This is a react-native link library project for in-app purchase for both
-> Android and iOS platforms.
->
-> The goal for this project is to have similar experience between the two
-> platforms for in-app-purchase. Basically, android platform has more functions
-> for in-app-purchase and is not our specific interests for this project.
->
+
+This is a react-native native module library project for in-app purchase for both
+Android and iOS platforms.
+
+The goal for this project is to have similar experience between the two
+platforms for in-app-purchase. Basically, android platform has more functions
+for in-app-purchase and is not our specific interests for this project.
+
 > We are willing to share same in-app-purchase experience for both `Android` and `iOS`.
 
 > Checkout demo:
@@ -66,6 +67,7 @@ react-native-iap
 
 Quick News
 ----------
+- We had hard time supporting `react-native-iap` issues that did not provide working codes or any other examples. Therefore, we've decided to make an `example` app called [DoobooIAP](https://github.com/hyochan/DoobooIAP), which will contain all the features of `IAP`'s and willing to continuously improve to support real-life examples. [@Bang9](http://github.com/bang9) who had been helping many others for `react-native-iap`, is willing to support this repo so he will grant $300 of our income in `opencollective` as described in [#855](https://github.com/dooboolab/react-native-iap/issues/855) :tada:.
 - `react-native-iap@4.0.8` ~ `react-native-iap@4.1.0` is incompatible with `react-native <0.61`. This is fixed in `react-native-iap@4.1.1` and above.
 - `react-native-iap@4.0.0` has been released. You can see [#716](https://github.com/dooboolab/react-native-iap/pull/716) for updates.
 - ~~For early stages, You can install pre-releases version by running `npm install --save reqct-native-iap@next`~~
