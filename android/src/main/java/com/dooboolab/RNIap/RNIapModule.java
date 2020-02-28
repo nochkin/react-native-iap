@@ -604,7 +604,7 @@ public class RNIapModule extends ReactContextBaseJavaModule implements Purchases
         .emit(eventName, params);
   }
 
-  @ReactMethod
+  @ReactMethod(isBlockingSynchronousMethod = true)
   public final String getInstallSource() {
     return DoobooUtils.getInstance().getInstallSource(reactContext);
   }

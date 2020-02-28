@@ -165,8 +165,10 @@ function detectInstallSource(): void {
 
 function getAndroidModule(): any {
   let myRNIapModule = null;
-  (iapInstallSource === InstallSource.NOT_SET) && detectInstallSource();
-  console.debug("RNIap: using ", iapInstallSource);
+  if (iapInstallSource === InstallSource.NOT_SET) {
+    detectInstallSource();
+  }
+  console.debug("RNIap: using ", iapInstallSource, iapInstallSource);
   switch(iapInstallSource) {
     case InstallSource.AMAZON:
       myRNIapModule = RNIapAmazonModule;

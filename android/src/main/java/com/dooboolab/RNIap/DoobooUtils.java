@@ -38,6 +38,10 @@ public class DoobooUtils {
   public static final String E_DEVELOPER_ERROR = "E_DEVELOPER_ERROR";
   public static final String E_BILLING_RESPONSE_JSON_PARSE_ERROR = "E_BILLING_RESPONSE_JSON_PARSE_ERROR";
 
+  public static final String APPSTORE_UNKNOWN = "UNKNOWN";
+  public static final String APPSTORE_GOOGLE = "GOOGLE_PLAY";
+  public static final String APPSTORE_AMAZON = "AMAZON";
+
   private HashMap<String, ArrayList<Promise>> promises = new HashMap<>();
   private static DoobooUtils instance = new DoobooUtils();
 
@@ -271,14 +275,14 @@ public class DoobooUtils {
     PackageManager pkgManager = appContext.getPackageManager();
     String installerPackageName = pkgManager.getInstallerPackageName(appContext.getPackageName());
     if (installerPackageName == null) {
-      return "DEV";
+      return APPSTORE_UNKNOWN;
     } else if ("com.android.vending".equals(installerPackageName)) {
-      return "GOOGLE_PLAY";
+      return APPSTORE_GOOGLE;
     } else if (installerPackageName.startsWith("com.amazon.")) {
-      return "AMAZON";
+      return APPSTORE_AMAZON;
     } else {
       Log.d(TAG, "Unknown installer source: " + installerPackageName);
     }
-    return null;
+    return APPSTORE_UNKNOWN;
   }
 }
