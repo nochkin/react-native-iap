@@ -29,7 +29,7 @@ The development environment does not set the install source, the default is to u
 If the fallback needs to be changed to use Amazon Appstore while testing, the following code snippet needed just before calling `RNIap.initConnection` for the first time in the app:
 ```
 if (__DEV__) {
-  RNIap.setInstallSourceFallback(RNIap.InstallSource.AMAZON);
+  RNIap.setFallbackInstallSourceAndroid(RNIap.InstallSourceAndroid.AMAZON);
 }
 RNIap.initConnection(...)
 ```
