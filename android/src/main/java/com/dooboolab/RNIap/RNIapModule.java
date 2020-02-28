@@ -606,6 +606,8 @@ public class RNIapModule extends ReactContextBaseJavaModule implements Purchases
 
   @ReactMethod
   public void getInstallSource(final Promise promise) {
-    promise.resolve(DoobooUtils.getInstance().getInstallSource(reactContext));
+    final String installSource = DoobooUtils.getInstance().getInstallSource(reactContext);
+    Log.d(TAG, "getInstallSource: " + installSource);
+    promise.resolve(installSource);
   }
 }
