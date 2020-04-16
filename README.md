@@ -643,16 +643,14 @@ Q & A
 
 #### How do I handle promoted products in iOS?
 - Offical doc is [here][apple-iap-promoting].
-- Start the `IAPPromotionObserver` in `-[application:didFinishLaunchingWithOptions:]`
-    in your `AppDelegate`:
+- Start the `IAPPromotionObserver` in `-[application:didFinishLaunchingWithOptions:]` in your `AppDelegate`:
 
-    ```objc
-    // Add '#import "IAPPromotionObserver.h"' to your imports
-    [IAPPromotionObserver startObserving];
-    ```
+  ```objc
+  // Add '#import "IAPPromotionObserver.h"' to your imports
+  [IAPPromotionObserver startObserving];
+  ```
 
-- Add an EventListener for the `iap-promoted-product` event somewhere early
-    in your app's lifecycle:
+- Add an EventListener for the `iap-promoted-product` event somewhere early in your app's lifecycle:
 
   ```javascript
   import { NativeModules, NativeEventEmitter } from 'react-native'

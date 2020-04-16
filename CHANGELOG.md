@@ -1,5 +1,10 @@
 ## Changelogs
 
+- **[4.4.4]**
+  Add guide add `IAPPromotionObserver` in ios
+  - Resolve [#950](https://github.com/dooboolab/react-native-iap/issues/950)
+  - Resolve [#971](https://github.com/dooboolab/react-native-iap/issues/971)
+
 - **[4.4.3]**
   - Bugfixes for [#849](https://github.com/dooboolab/react-native-iap/issues/849).
 
@@ -16,9 +21,6 @@
   - Fixes [#888](https://github.com/dooboolab/react-native-iap/issues/888)
   - PR [#893](https://github.com/dooboolab/react-native-iap/pull/893)
 
-Fixes #888 
-- **[4.3.4]**
-  - Fix `double precision` issue in java [885](https://github.com/dooboolab/react-native-iap/pull/885).
 - **[4.3.4]**
   - Fix `double precision` issue in java [885](https://github.com/dooboolab/react-native-iap/pull/885).
 - **[4.3.3]**
