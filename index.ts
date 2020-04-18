@@ -212,11 +212,35 @@ export const initConnection = (): Promise<boolean> =>
   })();
 
 /**
+ * End module for purchase flow.
+ * @returns {Promise<void>}
+ */
+export const endConnection = (): Promise<void> =>
+  Platform.select({
+    ios: async () => {
+      if (!RNIapIos) {
+        console.warn('Native ios module does not exists');
+        return Promise.resolve();
+      }
+      return RNIapIos.endConnection();
+    },
+    android: async () => {
+      if (!RNIapModule) {
+        console.warn('Native ios module does not exists');
+        return Promise.resolve();
+      }
+      return RNIapModule.endConnection();
+    },
+  })();
+
+/**
+ * @deprecated
  * End module for purchase flow. Required on Android. No-op on iOS.
  * @returns {Promise<void>}
  */
-export const endConnectionAndroid = (): Promise<void> =>
-  Platform.select({
+export const endConnectionAndroid = (): Promise<void> => {
+  console.warn('endConnectionAndroid is deprecated and will be removed in the future. Please use endConnection instead');
+  return Platform.select({
     ios: async () => Promise.resolve(),
     android: async () => {
       switch(iapInstallSourceAndroid) {
@@ -230,6 +254,7 @@ export const endConnectionAndroid = (): Promise<void> =>
       }
     },
   })();
+};
 
 /**
  * Consume all remaining tokens. Android only.
@@ -357,7 +382,7 @@ export const requestPurchase = (
     ios: async () => {
       andDangerouslyFinishTransactionAutomaticallyIOS =
         andDangerouslyFinishTransactionAutomaticallyIOS === undefined
-          ? true
+          ? false
           : andDangerouslyFinishTransactionAutomaticallyIOS;
       if (andDangerouslyFinishTransactionAutomaticallyIOS) {
         console.warn(
@@ -763,6 +788,7 @@ export const getPendingPurchasesIOS = (): Promise<ProductPurchase[]> => {
 const iapUtils = {
   IAPErrorCode,
   initConnection,
+  endConnection,
   endConnectionAndroid,
   getProducts,
   getSubscriptions,
