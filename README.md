@@ -122,7 +122,7 @@ _*deprecated_<br>~~`buySubscription(sku: string)`~~<ul><li>sku: subscription ID/
 `clearProductsIOS()`    | `void`            | **iOS only**<br>Clear all products and subscriptions.<br>Read more in below README.
 `getReceiptIOS()`   | `Promise<string>` | **iOS only**<br>Get the current receipt.
 `getPendingPurchasesIOS()` | `Promise<ProductPurchase[]>` | **IOS only**<br>Gets all the transactions which are pending to be finished.
-`validateReceiptIos(body: Object, devMode: boolean)`<ul><li>body: receiptBody</li><li>devMode: isTest</li></ul> | `Object\|boolean` | **iOS only**<br>Validate receipt.
+`validateReceiptIos(body: Record<string, unknown>, devMode: boolean)`<ul><li>body: receiptBody</li><li>devMode: isTest</li></ul> | `Object\|boolean` | **iOS only**<br>Validate receipt.
 `endConnection()` | `Promise<void>` | End billing connection.
 `consumeAllItemsAndroid()` | `Promise<void>` | **Android only**<br>Consume all items so they are able to buy again.
 `consumePurchaseAndroid(token: string, payload?: string)`<ul><li>token: purchase token</li><li>payload: developerPayload</li></ul>     | `void` | **Android only**<br>Finish a purchase. All purchases should be finished once you have delivered the purchased items. E.g. by recording the purchase in your database or on your server.
@@ -352,7 +352,7 @@ class RootComponent extends Component<*> {
       const receipt = purchase.transactionReceipt;
       if (receipt) {
         yourAPI.deliverOrDownloadFancyInAppPurchase(purchase.transactionReceipt)
-        .then((deliveryResult) => {
+        .then( async (deliveryResult) => {
           if (isSuccess(deliveryResult)) {
             // Tell the store that you have delivered what has been paid for.
             // Failure to do this will result in the purchase being refunded on Android and
@@ -360,19 +360,19 @@ class RootComponent extends Component<*> {
             // in doing the below. It will also be impossible for the user to purchase consumables
             // again untill you do this.
             if (Platform.OS === 'ios') {
-              RNIap.finishTransactionIOS(purchase.transactionId);
+              await RNIap.finishTransactionIOS(purchase.transactionId);
             } else if (Platform.OS === 'android') {
               // If consumable (can be purchased again)
-              RNIap.consumePurchaseAndroid(purchase.purchaseToken);
+              await RNIap.consumePurchaseAndroid(purchase.purchaseToken);
               // If not consumable
-              RNIap.acknowledgePurchaseAndroid(purchase.purchaseToken);
+              await RNIap.acknowledgePurchaseAndroid(purchase.purchaseToken);
             }
 
             // From react-native-iap@4.1.0 you can simplify above `method`. Try to wrap the statement with `try` and `catch` to also grab the `error` message.
             // If consumable (can be purchased again)
-            RNIap.finishTransaction(purchase, true);
+            await RNIap.finishTransaction(purchase, true);
             // If not consumable
-            RNIap.finishTransaction(purchase, false);
+            await RNIap.finishTransaction(purchase, false);
           } else {
             // Retry / conclude the purchase is fraudulent, etc...
           }
@@ -445,6 +445,8 @@ to record the purchase into your database before calling `consumePurchaseAndroid
 Non-consumable purchases need to be acknowledged on Android, or they will be automatically refunded after 
 a few days. Acknowledge a purchase when you have delivered it to your user by calling `acknowledgePurchaseAndroid()`.
 On iOS non-consumable purchases are finished automatically but this will change in the future so it is recommended that you prepare by simply calling `finishTransactionIOS()` on non-consumables as well.
+
+`finishTransaction()` works for both platforms and is recommended since version 4.1.0 or later. Equal to finishTransactionIOS + consumePurchaseAndroid and acknowledgePurchaseAndroid.
 
 Restoring Purchases
 -----------------------------------
