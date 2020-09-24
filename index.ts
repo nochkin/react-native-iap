@@ -392,15 +392,12 @@ InAppPurchase | SubscriptionPurchase
  * Request a purchase for product. This will be received in `PurchaseUpdatedListener`.
  * @param {string} sku The product's sku/ID
  * @param {boolean} [andDangerouslyFinishTransactionAutomaticallyIOS] You should set this to false and call finishTransaction manually when you have delivered the purchased goods to the user. It defaults to true to provide backwards compatibility. Will default to false in version 4.0.0.
- * @param {string} [developerIdAndroid] Specify an optional obfuscated string of developer profile name.
  * @param {string} [userIdAndroid] Specify an optional obfuscated string that is uniquely associated with the user's account in.
  * @returns {Promise<InAppPurchase>}
  */
 export const requestPurchase = (
   sku: string,
   andDangerouslyFinishTransactionAutomaticallyIOS?: boolean,
-  developerIdAndroid?: string,
-  accountIdAndroid?: string,
 ): Promise<InAppPurchase> =>
   Platform.select({
     ios: async () => {
@@ -427,8 +424,6 @@ export const requestPurchase = (
         sku,
         null,
         0,
-        developerIdAndroid,
-        accountIdAndroid,
       );
     },
   })();
@@ -439,8 +434,6 @@ export const requestPurchase = (
  * @param {boolean} [andDangerouslyFinishTransactionAutomaticallyIOS] You should set this to false and call finishTransaction manually when you have delivered the purchased goods to the user. It defaults to true to provide backwards compatibility. Will default to false in version 4.0.0.
  * @param {string} [oldSkuAndroid] SKU that the user is upgrading or downgrading from.
  * @param {ProrationModesAndroid} [prorationModeAndroid] UNKNOWN_SUBSCRIPTION_UPGRADE_DOWNGRADE_POLICY, IMMEDIATE_WITH_TIME_PRORATION, IMMEDIATE_AND_CHARGE_PRORATED_PRICE, IMMEDIATE_WITHOUT_PRORATION, DEFERRED
- * @param {string} [developerIdAndroid] Specify an optional obfuscated string of developer profile name.
- * @param {string} [userIdAndroid] Specify an optional obfuscated string that is uniquely associated with the user's account in.
  * @returns {Promise<void>}
  */
 export const requestSubscription = (
@@ -448,8 +441,6 @@ export const requestSubscription = (
   andDangerouslyFinishTransactionAutomaticallyIOS?: boolean,
   oldSkuAndroid?: string,
   prorationModeAndroid?: ProrationModesAndroid,
-  developerIdAndroid?: string,
-  userIdAndroid?: string,
 ): Promise<SubscriptionPurchase> =>
   Platform.select({
     ios: async () => {
@@ -477,8 +468,6 @@ export const requestSubscription = (
         sku,
         oldSkuAndroid,
         prorationModeAndroid,
-        developerIdAndroid,
-        userIdAndroid,
       );
     },
   })();
