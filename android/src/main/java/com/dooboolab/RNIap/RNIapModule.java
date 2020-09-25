@@ -1,4 +1,3 @@
-
 package com.dooboolab.RNIap;
 
 import android.app.Activity;

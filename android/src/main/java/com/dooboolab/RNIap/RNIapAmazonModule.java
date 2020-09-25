@@ -112,9 +112,8 @@ public class RNIapAmazonModule extends ReactContextBaseJavaModule {
     final String type,
     final String sku,
     final String oldSku,
+    final String purchaseToken,
     final Integer prorationMode,
-    final String developerId,
-    final String accountId,
     final Promise promise
   ) {
     RequestId requestId = PurchasingService.purchase(sku);
