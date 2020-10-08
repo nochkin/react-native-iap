@@ -7,7 +7,14 @@ Here are the additional steps to add Amazon IAP support.
   2. Add new SKU strings to your `RNIap.getProducts` or `RNIap.getSubscriptions` calls
 
 - App configuration
-  1. The current version of Amazon IAP SDK does not play well with R8 optimization. It needs to be disabled in `<root>/android/gradle.properties` as mentioned here https://developer.amazon.com/docs/in-app-purchasing/iap-obfuscate-the-code.html
+  1. The current version of Amazon IAP SDK does not play well with R8 optimization. (https://developer.amazon.com/docs/in-app-purchasing/iap-obfuscate-the-code.html).
+  Add the code below in `android/app/proguard-rules.pro`
+  ```
+  -dontwarn com.amazon.**
+  -keep class com.amazon.** {*;}
+  -keepattributes *Annotation*
+  ```
+
   2. Update AndroidManifest.xml to add the following:
   ```
   <application>

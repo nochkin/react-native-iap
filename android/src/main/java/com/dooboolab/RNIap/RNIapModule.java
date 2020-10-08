@@ -1,3 +1,4 @@
+
 package com.dooboolab.RNIap;
 
 import android.app.Activity;
@@ -418,6 +419,8 @@ public class RNIapModule extends ReactContextBaseJavaModule implements Purchases
     final String oldSku,
     final String purchaseToken,
     final Integer prorationMode,
+    final String obfuscatedAccountId,
+    final String obfuscatedProfileId,
     final Promise promise
   ) {
     final Activity activity = getCurrentActivity();
@@ -456,6 +459,14 @@ public class RNIapModule extends ReactContextBaseJavaModule implements Purchases
 
         if (oldSku != null && purchaseToken != null) {
           builder.setOldSku(oldSku, purchaseToken);
+        }
+
+        if (obfuscatedAccountId != null) {
+          builder.setObfuscatedAccountId(obfuscatedAccountId);
+        }
+
+        if (obfuscatedProfileId != null) {
+          builder.setObfuscatedProfileId(obfuscatedProfileId);
         }
 
         if (prorationMode != null && prorationMode != -1) {
@@ -639,7 +650,6 @@ public class RNIapModule extends ReactContextBaseJavaModule implements Purchases
   @ReactMethod
   public void getInstallSource(final Promise promise) {
     final String installSource = DoobooUtils.getInstance().getInstallSource(reactContext);
-    Log.d(TAG, "getInstallSource: " + installSource);
     promise.resolve(installSource);
   }
 }

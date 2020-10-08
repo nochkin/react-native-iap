@@ -274,7 +274,7 @@ public class DoobooUtils {
     Context appContext = context.getApplicationContext();
     PackageManager pkgManager = appContext.getPackageManager();
     String installerPackageName = pkgManager.getInstallerPackageName(appContext.getPackageName());
-    Log.d(TAG, "Installer source: " + installerPackageName);
+
     if (installerPackageName == null) {
       return APPSTORE_UNKNOWN;
     } else if ("com.android.vending".equals(installerPackageName)) {

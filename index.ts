@@ -99,6 +99,9 @@ export interface ProductPurchase {
   originalTransactionDateIOS?: string;
   originalTransactionIdentifierIOS?: string;
   isAcknowledgedAndroid?: boolean;
+  userIdAmazon?: string;
+  userMarketplaceAmazon?: string;
+  userJsonAmazon?: string;
 }
 
 export interface PurchaseResult {
@@ -151,15 +154,15 @@ export function getInstallSourceAndroid(): InstallSourceAndroid {
   return iapInstallSourceAndroid;
 }
 
-async function detectInstallSourceAndroid() {
+async function detectInstallSourceAndroid(): Promise<void> {
   const detectedInstallSourceAndroid = await RNIapModule.getInstallSource();
-  console.debug("RNIap: detected", detectedInstallSourceAndroid);
   let newInstallSourceAndroid = iapFallbackInstallSourceAndroid;
+
   switch (detectedInstallSourceAndroid) {
-    case "GOOGLE_PLAY":
+    case 'GOOGLE_PLAY':
       newInstallSourceAndroid = InstallSourceAndroid.GOOGLE_PLAY;
       break;
-    case "AMAZON":
+    case 'AMAZON':
       newInstallSourceAndroid = InstallSourceAndroid.AMAZON;
       break;
   }
@@ -168,8 +171,8 @@ async function detectInstallSourceAndroid() {
 
 function getAndroidModule(): any {
   let myRNIapModule = null;
-  console.debug("RNIap: using ", iapInstallSourceAndroid);
-  switch(iapInstallSourceAndroid) {
+
+  switch (iapInstallSourceAndroid) {
     case InstallSourceAndroid.AMAZON:
       myRNIapModule = RNIapAmazonModule;
       break;
@@ -221,17 +224,18 @@ export const endConnection = (): Promise<void> =>
   Platform.select({
     ios: async () => {
       if (!RNIapIos) {
-        console.warn('Native ios module does not exists');
+        console.warn('Native ios module does not exist');
         return Promise.resolve();
       }
       return RNIapIos.endConnection();
     },
     android: async () => {
-      if (!RNIapModule) {
-        console.warn('Native ios module does not exists');
+      const myRNIapModule = getAndroidModule();
+      if (!RNIapModule || !RNIapAmazonModule) {
+        console.warn('Native android module does not exist');
         return Promise.resolve();
       }
-      return RNIapModule.endConnection();
+      return myRNIapModule.endConnection();
     },
   })();
 
@@ -245,7 +249,7 @@ export const endConnectionAndroid = (): Promise<void> => {
   return Platform.select({
     ios: async () => Promise.resolve(),
     android: async () => {
-      switch(iapInstallSourceAndroid) {
+      switch (iapInstallSourceAndroid) {
         case InstallSourceAndroid.AMAZON:
           return Promise.resolve();
         default:
@@ -288,9 +292,44 @@ export const flushFailedPurchasesCachedAsPendingAndroid = (): Promise<string[]> 
     android: async () => {
       const myRNIapModule = getAndroidModule();
       await checkNativeAndroidAvailable(myRNIapModule);
-      return myRNIapModule.flushFailedPurchasesCachedAsPending();
+      return RNIapModule.flushFailedPurchasesCachedAsPending();
     },
   })();
+
+/**
+ * Fill products with additional data
+ * @param {Array<Common>} products Products
+ */
+const fillProductsAdditionalData = async (products: Array<Common>): Promise<Array<Common>> => {
+  const myRNIapModule = getAndroidModule();
+  // Amazon
+  if (iapInstallSourceAndroid === InstallSourceAndroid.AMAZON) {
+    // On amazon we must get the user marketplace to detect the currency
+    const user = await myRNIapModule.getUser();
+    const currencies = {
+      CA: 'CAD',
+      ES: 'EUR',
+      AU: 'AUD',
+      DE: 'EUR',
+      IN: 'INR',
+      US: 'USD',
+      JP: 'JPY',
+      GB: 'GBP',
+      IT: 'EUR',
+      BR: 'BRL',
+      FR: 'EUR',
+    };
+    const currency = currencies[user.userMarketplaceAmazon];
+    // Add currency to products
+    products.forEach((product) => {
+      if (currency) {
+        product.currency = currency;
+      }
+    });
+  }
+
+  return products;
+};
 
 /**
  * Get a list of products (consumable and non-consumable items, but not subscriptions)
@@ -311,10 +350,9 @@ export const getProducts = <SkuType extends string>(
     },
     android: async () => {
       const myRNIapModule = getAndroidModule();
-      if (!myRNIapModule) {
-        return [];
-      }
-      return myRNIapModule.getItemsByType(ANDROID_ITEM_TYPE_IAP, skus);
+      await checkNativeAndroidAvailable(myRNIapModule);
+      const products = await myRNIapModule.getItemsByType(ANDROID_ITEM_TYPE_IAP, skus);
+      return fillProductsAdditionalData(products);
     },
   })();
 
@@ -326,15 +364,16 @@ export const getProducts = <SkuType extends string>(
 export const getSubscriptions = (skus: string[]): Promise<Subscription[]> =>
   Platform.select({
     ios: async () => {
-      checkNativeiOSAvailable();
+      await checkNativeiOSAvailable();
       return RNIapIos.getItems(skus).then((items: Subscription[]) =>
         items.filter((item: Subscription) => skus.includes(item.productId)),
       );
     },
     android: async () => {
-      const myRNIapModule = getAndroidModule();
-      await checkNativeAndroidAvailable(myRNIapModule);
-      return myRNIapModule.getItemsByType(ANDROID_ITEM_TYPE_SUBSCRIPTION, skus);
+      const myModule = getAndroidModule();
+      await checkNativeAndroidAvailable(myModule);
+      const subscriptions = await myModule.getItemsByType(ANDROID_ITEM_TYPE_SUBSCRIPTION, skus);
+      return fillProductsAdditionalData(subscriptions);
     },
   })();
 
@@ -392,12 +431,15 @@ InAppPurchase | SubscriptionPurchase
  * Request a purchase for product. This will be received in `PurchaseUpdatedListener`.
  * @param {string} sku The product's sku/ID
  * @param {boolean} [andDangerouslyFinishTransactionAutomaticallyIOS] You should set this to false and call finishTransaction manually when you have delivered the purchased goods to the user. It defaults to true to provide backwards compatibility. Will default to false in version 4.0.0.
- * @param {string} [userIdAndroid] Specify an optional obfuscated string that is uniquely associated with the user's account in.
+ * @param {string} [obfuscatedAccountIdAndroid] Specifies an optional obfuscated string that is uniquely associated with the user's account in your app.
+ * @param {string} [obfuscatedProfileIdAndroid] Specifies an optional obfuscated string that is uniquely associated with the user's profile in your app.
  * @returns {Promise<InAppPurchase>}
  */
 export const requestPurchase = (
   sku: string,
   andDangerouslyFinishTransactionAutomaticallyIOS?: boolean,
+  obfuscatedAccountIdAndroid?: string,
+  obfuscatedProfileIdAndroid?: string,
 ): Promise<InAppPurchase> =>
   Platform.select({
     ios: async () => {
@@ -425,6 +467,8 @@ export const requestPurchase = (
         null,
         null,
         0,
+        obfuscatedAccountIdAndroid,
+        obfuscatedProfileIdAndroid,
       );
     },
   })();
@@ -435,6 +479,8 @@ export const requestPurchase = (
  * @param {boolean} [andDangerouslyFinishTransactionAutomaticallyIOS] You should set this to false and call finishTransaction manually when you have delivered the purchased goods to the user. It defaults to true to provide backwards compatibility. Will default to false in version 4.0.0.
  * @param {string} [oldSkuAndroid] SKU that the user is upgrading or downgrading from.
  * @param {string} [purchaseTokenAndroid] purchaseToken that the user is upgrading or downgrading from (Android).
+ * @param {string} [obfuscatedAccountIdAndroid] Specifies an optional obfuscated string that is uniquely associated with the user's account in your app.
+ * @param {string} [obfuscatedProfileIdAndroid] Specifies an optional obfuscated string that is uniquely associated with the user's profile in your app.
  * @param {ProrationModesAndroid} [prorationModeAndroid] UNKNOWN_SUBSCRIPTION_UPGRADE_DOWNGRADE_POLICY, IMMEDIATE_WITH_TIME_PRORATION, IMMEDIATE_AND_CHARGE_PRORATED_PRICE, IMMEDIATE_WITHOUT_PRORATION, DEFERRED
  * @returns {Promise<void>}
  */
@@ -444,6 +490,8 @@ export const requestSubscription = (
   oldSkuAndroid?: string,
   purchaseTokenAndroid?: string,
   prorationModeAndroid?: ProrationModesAndroid,
+  obfuscatedAccountIdAndroid?: string,
+  obfuscatedProfileIdAndroid?: string,
 ): Promise<SubscriptionPurchase> =>
   Platform.select({
     ios: async () => {
@@ -463,15 +511,17 @@ export const requestSubscription = (
       );
     },
     android: async () => {
+      if (!prorationModeAndroid) prorationModeAndroid = -1;
       const myRNIapModule = getAndroidModule();
       await checkNativeAndroidAvailable(myRNIapModule);
-      if (!prorationModeAndroid) prorationModeAndroid = -1;
       return myRNIapModule.buyItemByType(
         ANDROID_ITEM_TYPE_SUBSCRIPTION,
         sku,
         oldSkuAndroid,
         purchaseTokenAndroid,
         prorationModeAndroid,
+        obfuscatedAccountIdAndroid,
+        obfuscatedProfileIdAndroid,
       );
     },
   })();
@@ -534,8 +584,9 @@ export const finishTransaction = (
             developerPayloadAndroid,
           );
         } else if (
-          !purchase.isAcknowledgedAndroid &&
-          purchase.purchaseStateAndroid === PurchaseStateAndroid.PURCHASED
+          purchase.userIdAmazon ||
+          (!purchase.isAcknowledgedAndroid &&
+          purchase.purchaseStateAndroid === PurchaseStateAndroid.PURCHASED)
         ) {
           return myRNIapModule.acknowledgePurchase(
             purchase.purchaseToken,
