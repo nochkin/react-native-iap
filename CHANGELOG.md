@@ -1,5 +1,11 @@
 ## Changelogs
 
+- **[5.1.1]**
+  - Add type definition on `ProductPurchase`.
+
+- **[5.1.0]**
+  - Expose more variables in `android` [#1171](https://github.com/dooboolab/react-native-iap/pull/1171).
+
 - **[5.0.1]**
   - Fix amazon buyItemByType missing parameters dooboolab/react-native-iap/pull/1149
 

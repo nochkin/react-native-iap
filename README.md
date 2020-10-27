@@ -352,10 +352,10 @@ class RootComponent extends Component<*> {
   purchaseErrorSubscription = null
 
   componentDidMount() {
-    Iap.initConnection().then(() => {
+    RNIap.initConnection().then(() => {
       // we make sure that "ghost" pending payment are removed
       // (ghost = failed pending payment that are still marked as pending in Google's native Vending module cache)
-      Iap.flushFailedPurchasesCachedAsPendingAndroid().catch(() => {
+      RNIap.flushFailedPurchasesCachedAsPendingAndroid().catch(() => {
         // exception can happen here if:
         // - there are pending purchases that are still pending (we can't consume a pending purchase)
         // in any case, you might not want to do anything special with the error
@@ -524,6 +524,10 @@ Property                           | Type      | iOS | And | Comment
 `signatureAndroid`                 | `string`  |     | ✓   | The signature of the purchase data that was signed with the private key of the developer.<br>The data signature uses the `RSASSA-PKCS1-v1_5` scheme.
 `isAcknowledgedAndroid`            | `boolean` |     | ✓   | Checking if purchase has been acknowledged.
 `purchaseStateAndroid`             | `number`  |     | ✓   | Indicating purchase state.
+`packageNameAndroid`               | `string`  |     | ✓   | Get package name.
+`developerPayloadAndroid`          | `string`  |     | ✓   | https://developer.android.com/google/play/billing/developer-payload
+`obfuscatedAccountIdAndroid`       | `string`  |     | ✓   | https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.Builder#setobfuscatedaccountidBuilder#setobfuscatedaccountId
+`obfuscatedProfileIdAndroid`       | `string`  |     | ✓   | https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.Builder#setobfuscatedprofileid
 
 You need to test with one sandbox account, because the account holds previous purchase history.
 
