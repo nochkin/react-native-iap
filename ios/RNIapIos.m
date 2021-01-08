@@ -255,11 +255,23 @@ RCT_EXPORT_METHOD(buyProductWithQuantityIOS:(NSString*)sku
     }
 }
 
-RCT_EXPORT_METHOD(clearTransaction) {
-    NSArray *pendingTrans = [[SKPaymentQueue defaultQueue] transactions];
+RCT_EXPORT_METHOD(clearTransaction:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject) {  
+    
     NSLog(@"\n\n\n  ***  clear remaining Transactions. Call this before make a new transaction   \n\n.");
-    for (int k = 0; k < pendingTrans.count; k++) {
-        [[SKPaymentQueue defaultQueue] finishTransaction:pendingTrans[k]];
+
+    NSArray *pendingTrans = [[SKPaymentQueue defaultQueue] transactions];
+    countPendingTransaction = (NSInteger)(pendingTrans.count);
+    
+    if (countPendingTransaction > 0) {
+        [self addPromiseForKey:@"cleaningTransactions" resolve:resolve reject:reject];
+
+        for (SKPaymentTransaction *transaction in pendingTrans) {
+            [[SKPaymentQueue defaultQueue] finishTransaction:transaction];
+        }
+        
+    } else {
+        resolve(nil);
     }
 }
 
@@ -324,15 +336,21 @@ RCT_EXPORT_METHOD(getPendingTransactions:(RCTPromiseResolveBlock)resolve
     }];
 }
 
+
 RCT_EXPORT_METHOD(presentCodeRedemptionSheet:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject) {
+#ifdef __IPHONE_14_0
     if (@available(iOS 14.0, *)) {
         [[SKPaymentQueue defaultQueue] presentCodeRedemptionSheet];
         resolve(nil);
     } else {
         reject([self standardErrorCode:2], @"This method only available above iOS 14", nil);
     }
+#else
+    reject([self standardErrorCode:2], @"This method only available above iOS 14", nil);
+#endif
 }
+
 
 #pragma mark ===== StoreKit Delegate
 
@@ -811,6 +829,17 @@ static NSString *RCTKeyForInstance(id instance)
             receiptBlock(nil, error);
         }
         receiptBlock = nil;
+    }
+}
+
+-(void)paymentQueue:(SKPaymentQueue *)queue removedTransactions:(NSArray *)transactions {
+    NSLog(@"removedTransactions");
+    if (countPendingTransaction != nil && countPendingTransaction > 0) {
+        countPendingTransaction -= [transactions count];
+        if (countPendingTransaction == 0) {
+            [self resolvePromisesForKey:@"cleaningTransactions" value:nil];
+            countPendingTransaction = nil;
+        }
     }
 }
 

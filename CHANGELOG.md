@@ -1,5 +1,15 @@
 ## Changelogs
 
+- **[5.2.3]**
+  Fix posible problem clearTransactionsIOS [#1227](https://github.com/dooboolab/react-native-iap/pull/1227)
+
+- **[5.2.2]**
+  - Improving typescript types for iOS subscription [#1219](https://github.com/dooboolab/react-native-iap/pull/1219)
+  - Fix(presentCodeRedemptionSheet): Xcode 11 compatibility [#1218](https://github.com/dooboolab/react-native-iap/pull/1218)
+
+- **[5.2.1]**
+  - Patch clear transaction [#1215](https://github.com/dooboolab/react-native-iap/pull/1215)
+
 - **[5.2.0]**
   - Added presentCodeRedemptionSheetIOS [#1201](https://github.com/dooboolab/react-native-iap/pull/1201)
     * By [@Bang9](https://github.com/Bang9)
